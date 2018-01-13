@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int RQS_ENABLE_BLUETOOTH = 1;
 
     Button btnScan;
+    Button btnMail;
     ListView listViewLE;
 
     List<BluetoothDevice> listBluetoothDevice;
@@ -78,6 +79,15 @@ public class MainActivity extends AppCompatActivity {
                 scanLeDevice(true);
             }
         });
+
+        btnMail = (Button)findViewById(R.id.mail);
+        btnMail.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendEMail();
+            }
+        });
+
         listViewLE = (ListView)findViewById(R.id.lelist);
 
         listBluetoothDevice = new ArrayList<>();
@@ -88,6 +98,19 @@ public class MainActivity extends AppCompatActivity {
 
         mHandler = new Handler();
 
+    }
+
+    private void sendEMail() {
+        //Getting content for email
+        String email = "mpsitiot@gmail.com";
+        String subject = "HELP";
+        String message = "GPS coordonates";
+
+        //Creating SendMail object
+        SendMail sm = new SendMail(this, email, subject, message);
+
+        //Executing sendmail to send email
+        sm.execute();
     }
 
     AdapterView.OnItemClickListener scanResultOnItemClickListener =
