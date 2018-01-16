@@ -85,6 +85,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 sendEMail();
+                SmsManager smsManager = SmsManager.getDefault();
+                smsManager.sendTextMessage("Phone Number", null, "Message", null, null);
             }
         });
 
