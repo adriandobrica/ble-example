@@ -25,11 +25,18 @@ import android.widget.Button;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
+import android.location.LocationManager;
+import android.telephony.SmsManager;
+import android.location.*;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements LocationListener {
 
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner mBluetoothLeScanner;
@@ -47,11 +54,35 @@ public class MainActivity extends AppCompatActivity {
 
     private Handler mHandler;
     private static final long SCAN_PERIOD = 10000;
+    private LocationManager locationManager;
+    private String provider;
+    private double lat;
+    private double lng;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        lat = 44.435758;
+        lng = 26.047905;
+
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        // Define the criteria how to select the locatioin provider -> use
+        // default
+        Criteria criteria = new Criteria();
+        provider = locationManager.getBestProvider(criteria, false);
+        Location location = locationManager.getLastKnownLocation(provider);
+
+        // Initialize the location fields
+        if (location != null) {
+            System.out.println("Provider " + provider + " has been selected.");
+            onLocationChanged(location);
+        /*} else {
+            latituteField.setText("Location not available");
+            longitudeField.setText("Location not available");*/
+        }
+
 
         // Check if BLE is supported on the device.
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -103,9 +134,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendEMail() {
- 
-        LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 20, 0, this);
+        Location location1 = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        if(location1 != null)
+        {
+            lat = location1.getLatitude();
+            lng = location1.getLongitude();
+        }
+        //if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -113,15 +150,16 @@ public class MainActivity extends AppCompatActivity {
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        double longitude = location.getLongitude();
-        double latitude = location.getLatitude();
+         //   return;
+        //}
+        //Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        //double longitude = location.getLongitude();
+        //double latitude = location.getLatitude();
         //Getting content for email
+
         String email = "mpsitiot@gmail.com";
         String subject = "HELP";
-        String message = "GPS coordonates: Longitude " + Double.toString(longitude) + " Latitide " + Double.toString(latitude);
+        String message = "GPS coordonates: Longitude " + Double.toString(lng) + " Latitide " + Double.toString(lat);
  
         //Creating SendMail object
         SendMail sm = new SendMail(this, email, subject, message);
@@ -182,12 +220,45 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
+        locationManager.requestLocationUpdates(provider, 400, 1, this);
+
         if (!mBluetoothAdapter.isEnabled()) {
             if (!mBluetoothAdapter.isEnabled()) {
                 Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 startActivityForResult(enableBtIntent, RQS_ENABLE_BLUETOOTH);
             }
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        locationManager.removeUpdates(this);
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        lat = location.getLatitude();
+        lng = location.getLongitude();
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+        Toast.makeText(this, "Enabled new provider " + provider,
+                Toast.LENGTH_SHORT).show();
+
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+        Toast.makeText(this, "Disabled provider " + provider,
+                Toast.LENGTH_SHORT).show();
     }
 
     @Override
