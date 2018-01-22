@@ -6,5 +6,5 @@ package com.example.adrian.androidblegatt2;
 
 public class Config {
         public static final String EMAIL ="mpsitiot";
-        public static final String PASSWORD ="Internet_Of";
+        public static final String PASSWORD ="******";
 }

@@ -18,6 +18,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -32,6 +33,9 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+
+import java.io.IOException;
+import java.util.Locale;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,6 +62,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private String provider;
     private double lat;
     private double lng;
+
+    private boolean my_alert = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,6 +116,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 scanLeDevice(true);
             }
         });
+        btnScan.setEnabled(false);
 
         btnMail = (Button)findViewById(R.id.mail);
         btnMail.setOnClickListener(new View.OnClickListener() {
@@ -130,8 +137,38 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         listViewLE.setOnItemClickListener(scanResultOnItemClickListener);
 
         mHandler = new Handler();
-
+        startScan.run();
     }
+
+
+    private Runnable startScan = new Runnable() {
+        @Override
+        public void run() {
+            listBluetoothDevice.clear();
+            listViewLE.invalidateViews();
+            //my_alert = false;
+
+            mHandler.postDelayed(stopScan, 10000);
+            mBluetoothLeScanner.startScan(scanCallback);
+        }
+    };
+
+    private Runnable stopScan = new Runnable() {
+        @Override
+        public void run() {
+            //listBluetoothDevice.clear();
+            //listViewLE.invalidateViews();
+            if (my_alert == true) {
+                sendEMail();
+                SmsManager smsManager = SmsManager.getDefault();
+                smsManager.sendTextMessage("Phone Number", null, "Message", null, null);
+                my_alert = false;
+            }
+            mHandler.postDelayed(startScan, 100);
+            mBluetoothLeScanner.stopScan(scanCallback);
+        }
+    };
+
 
     private void sendEMail() {
 
@@ -155,11 +192,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         //Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         //double longitude = location.getLongitude();
         //double latitude = location.getLatitude();
+
         //Getting content for email
+        String adr_pos = "https://www.google.ro/maps/@" + Double.toString(lat) + "," + Double.toString(lng) + ",19z?hl=en";
 
         String email = "mpsitiot@gmail.com";
-        String subject = "HELP";
-        String message = "GPS coordonates: Longitude " + Double.toString(lng) + " Latitide " + Double.toString(lat);
+        String subject = "Bunicul solicita ajutor";
+        String message = "Bunicul a apasat butonul de panica la coordonatele GPS: Longitudine E " + Double.toString(lng) + " Latitudine N " + Double.toString(lat) + ".\n" + adr_pos + "\n";
  
         //Creating SendMail object
         SendMail sm = new SendMail(this, email, subject, message);
@@ -299,15 +338,16 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     Must hold ACCESS_COARSE_LOCATION or ACCESS_FINE_LOCATION permission to get results.
      */
     private void scanLeDevice(final boolean enable) {
-        if (enable) {
+        if (true) {
             listBluetoothDevice.clear();
             listViewLE.invalidateViews();
 
             // Stops scanning after a pre-defined scan period.
-            mHandler.postDelayed(new Runnable() {
+           /* mHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    mBluetoothLeScanner.stopScan(scanCallback);
+                    //mBluetoothLeScanner.stopScan(scanCallback);
+                    listBluetoothDevice.clear();
                     listViewLE.invalidateViews();
 
                     Toast.makeText(MainActivity.this,
@@ -317,17 +357,25 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     mScanning = false;
                     btnScan.setEnabled(true);
                 }
-            }, SCAN_PERIOD);
+            }, SCAN_PERIOD);*/
 
             mBluetoothLeScanner.startScan(scanCallback);
+            /*mBluetoothLeScanner.startScan(scanCallback);
             mScanning = true;
-            btnScan.setEnabled(false);
+            btnScan.setEnabled(false);*/
         } else {
-            mBluetoothLeScanner.stopScan(scanCallback);
-            mScanning = false;
-            btnScan.setEnabled(true);
+            //mBluetoothLeScanner.stopScan(scanCallback);
+            //mScanning = false;
+            //btnScan.setEnabled(true);
         }
     }
+
+    private void stopLeDevice()
+    {
+
+    }
+
+
 
     private ScanCallback scanCallback = new ScanCallback() {
         @Override
@@ -335,6 +383,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             super.onScanResult(callbackType, result);
 
             addBluetoothDevice(result.getDevice());
+
         }
 
         @Override
@@ -354,9 +403,24 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
 
         private void addBluetoothDevice(BluetoothDevice device){
+            if(device.getName() != null) {
+                if(device.getName().equals("LoPy"))
+                Toast.makeText(MainActivity.this,
+                        device.getAddress(),
+                        Toast.LENGTH_LONG).show();
+
+                // Log.e("TAG", device.getName());
+                //Log.e("TAG", Boolean.toString(result));
+            }
+
             if(!listBluetoothDevice.contains(device)){
                 listBluetoothDevice.add(device);
                 listViewLE.invalidateViews();
+                if (device.getName() != null && device.getName().equals("LoPy") ) {
+                    if (my_alert == false) {
+                        my_alert = true;
+                    }
+                }
             }
         }
     };
