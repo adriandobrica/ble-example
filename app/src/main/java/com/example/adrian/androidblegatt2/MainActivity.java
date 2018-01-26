@@ -160,8 +160,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             //listViewLE.invalidateViews();
             if (my_alert == true) {
                 sendEMail();
-                SmsManager smsManager = SmsManager.getDefault();
-                smsManager.sendTextMessage("Phone Number", null, "Message", null, null);
                 my_alert = false;
             }
             mHandler.postDelayed(startScan, 100);
@@ -202,7 +200,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
  
         //Creating SendMail object
         SendMail sm = new SendMail(this, email, subject, message);
- 
+        SmsManager smsManager = SmsManager.getDefault();
+
+        String smsMsg = "Bunicul a cazut la: " +  "E " + Double.toString(lng) + " N " + Double.toString(lat);
+
+        smsManager.sendTextMessage("****", null, smsMsg, null, null);
         //Executing sendmail to send email
         sm.execute();
     }
